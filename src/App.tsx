@@ -13,8 +13,12 @@ function App() {
   const [bisectState, setBisectState] = useState<BisectState | null>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
   const [stepCount, setStepCount] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragType, setDragType] = useState<'playhead' | 'startHandle' | 'endHandle' | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
 
   // Handle file selection
   const handleFileSelect = (file: File) => {
@@ -80,6 +84,60 @@ function App() {
     }
   }, [videoFile])
 
+  // Handle video playback and looping
+  useEffect(() => {
+    if (!videoRef.current || !bisectState) return
+
+    const video = videoRef.current
+
+    const handleTimeUpdate = () => {
+      if (!isPlaying || !bisectState) return
+
+      // Update currentTime while playing
+      setBisectState(prev => prev ? { ...prev, currentTime: video.currentTime } : null)
+
+      // Loop back to start when reaching end of range
+      if (video.currentTime >= bisectState.endTime) {
+        video.currentTime = bisectState.startTime
+      }
+    }
+
+    const handlePause = () => {
+      if (isPlaying) {
+        setIsPlaying(false)
+        // Update currentTime to where the video was paused
+        setBisectState(prev => prev ? { ...prev, currentTime: video.currentTime } : null)
+      }
+    }
+
+    video.addEventListener('timeupdate', handleTimeUpdate)
+    video.addEventListener('pause', handlePause)
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate)
+      video.removeEventListener('pause', handlePause)
+    }
+  }, [isPlaying, bisectState])
+
+  // Play/pause toggle
+  const handlePlayPause = () => {
+    if (!videoRef.current || !bisectState) return
+
+    const video = videoRef.current
+
+    if (isPlaying) {
+      video.pause()
+      setIsPlaying(false)
+    } else {
+      // Start from startTime if currently at or past endTime
+      if (video.currentTime >= bisectState.endTime || video.currentTime < bisectState.startTime) {
+        video.currentTime = bisectState.startTime
+      }
+      video.play()
+      setIsPlaying(true)
+    }
+  }
+
   // Handle bisect button clicks
   const handleBisect = (itemStillThere: boolean) => {
     if (!bisectState || !videoRef.current) return
@@ -118,6 +176,81 @@ function App() {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Convert mouse position to video time
+  const getTimeFromMousePosition = (clientX: number): number => {
+    if (!timelineRef.current || !videoDuration) return 0
+
+    const rect = timelineRef.current.getBoundingClientRect()
+    const x = clientX - rect.left
+    const percentage = Math.max(0, Math.min(1, x / rect.width))
+    return percentage * videoDuration
+  }
+
+  // Handle drag start
+  const handleDragStart = (type: 'playhead' | 'startHandle' | 'endHandle') => (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    setDragType(type)
+  }
+
+  // Handle mouse move during drag
+  useEffect(() => {
+    if (!isDragging || !dragType || !bisectState || !videoRef.current) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newTime = getTimeFromMousePosition(e.clientX)
+
+      if (dragType === 'playhead') {
+        // Constrain playhead to current range
+        const constrainedTime = Math.max(bisectState.startTime, Math.min(bisectState.endTime, newTime))
+        setBisectState(prev => prev ? { ...prev, currentTime: constrainedTime } : null)
+        videoRef.current!.currentTime = constrainedTime
+      } else if (dragType === 'startHandle') {
+        // Constrain start handle to not go past end
+        const constrainedTime = Math.max(0, Math.min(bisectState.endTime - 1, newTime))
+        setBisectState(prev => prev ? { ...prev, startTime: constrainedTime } : null)
+        // If currentTime is now outside range, move it
+        if (bisectState.currentTime < constrainedTime) {
+          setBisectState(prev => prev ? { ...prev, currentTime: constrainedTime } : null)
+          videoRef.current!.currentTime = constrainedTime
+        }
+      } else if (dragType === 'endHandle') {
+        // Constrain end handle to not go before start
+        const constrainedTime = Math.max(bisectState.startTime + 1, Math.min(videoDuration, newTime))
+        setBisectState(prev => prev ? { ...prev, endTime: constrainedTime } : null)
+        // If currentTime is now outside range, move it
+        if (bisectState.currentTime > constrainedTime) {
+          setBisectState(prev => prev ? { ...prev, currentTime: constrainedTime } : null)
+          videoRef.current!.currentTime = constrainedTime
+        }
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+      setDragType(null)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragType, bisectState, videoDuration])
+
+  // Handle timeline click
+  const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isDragging || !bisectState || !videoRef.current) return
+
+    const newTime = getTimeFromMousePosition(e.clientX)
+    const constrainedTime = Math.max(bisectState.startTime, Math.min(bisectState.endTime, newTime))
+
+    setBisectState(prev => prev ? { ...prev, currentTime: constrainedTime } : null)
+    videoRef.current.currentTime = constrainedTime
   }
 
   return (
@@ -164,6 +297,74 @@ function App() {
           </div>
 
           {bisectState && (
+            <div className="scrubber-container">
+              <div
+                ref={timelineRef}
+                className="timeline"
+                onClick={handleTimelineClick}
+              >
+                {/* Full timeline background */}
+                <div className="timeline-track" />
+
+                {/* Active range highlight */}
+                <div
+                  className="timeline-range"
+                  style={{
+                    left: `${(bisectState.startTime / videoDuration) * 100}%`,
+                    width: `${((bisectState.endTime - bisectState.startTime) / videoDuration) * 100}%`
+                  }}
+                />
+
+                {/* Start handle */}
+                <div
+                  className="timeline-handle start-handle"
+                  style={{ left: `${(bisectState.startTime / videoDuration) * 100}%` }}
+                  onMouseDown={handleDragStart('startHandle')}
+                >
+                  <div className="handle-tooltip">{formatTime(bisectState.startTime)}</div>
+                </div>
+
+                {/* End handle */}
+                <div
+                  className="timeline-handle end-handle"
+                  style={{ left: `${(bisectState.endTime / videoDuration) * 100}%` }}
+                  onMouseDown={handleDragStart('endHandle')}
+                >
+                  <div className="handle-tooltip">{formatTime(bisectState.endTime)}</div>
+                </div>
+
+                {/* Playhead */}
+                <div
+                  className="timeline-playhead"
+                  style={{ left: `${(bisectState.currentTime / videoDuration) * 100}%` }}
+                  onMouseDown={handleDragStart('playhead')}
+                >
+                  <div className="playhead-line" />
+                  <div className="playhead-handle" />
+                  <div className="playhead-tooltip">{formatTime(bisectState.currentTime)}</div>
+                </div>
+              </div>
+
+              {/* Play/Pause button */}
+              <button
+                className="play-pause-button"
+                onClick={handlePlayPause}
+                disabled={!isVideoReady}
+              >
+                {isPlaying ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
+
+          {bisectState && (
             <div className="info-panel">
               <div className="info-item">
                 <span className="label">Current time:</span>
@@ -190,14 +391,14 @@ function App() {
             <button
               className="bisect-button still-there"
               onClick={() => handleBisect(true)}
-              disabled={!isVideoReady}
+              disabled={!isVideoReady || isPlaying}
             >
               Item Still There
             </button>
             <button
               className="bisect-button stolen"
               onClick={() => handleBisect(false)}
-              disabled={!isVideoReady}
+              disabled={!isVideoReady || isPlaying}
             >
               Item Stolen
             </button>

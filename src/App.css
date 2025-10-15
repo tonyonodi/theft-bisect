@@ -1,3 +1,7 @@
+#root {
+  width: 100%;
+}
+
 .app {
   max-width: 1200px;
   margin: 0 auto;
@@ -106,6 +110,188 @@ h1 {
   background-color: rgba(0, 0, 0, 0.7);
   padding: 1rem 2rem;
   border-radius: 8px;
+}
+
+/* Scrubber container styles */
+.scrubber-container {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Timeline styles */
+.timeline {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.timeline-track {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 8px;
+  background-color: #ddd;
+  border-radius: 4px;
+}
+
+.timeline-range {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 8px;
+  background-color: #646cff;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* Timeline handles */
+.timeline-handle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background-color: #646cff;
+  border: 3px solid white;
+  border-radius: 50%;
+  cursor: ew-resize;
+  z-index: 2;
+  transition: transform 0.1s ease;
+}
+
+.timeline-handle:hover {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.timeline-handle.start-handle {
+  background-color: #4caf50;
+}
+
+.timeline-handle.end-handle {
+  background-color: #f44336;
+}
+
+/* Handle tooltips */
+.handle-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-handle:hover .handle-tooltip {
+  opacity: 1;
+}
+
+/* Playhead styles */
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transform: translateX(-50%);
+  cursor: ew-resize;
+  z-index: 3;
+}
+
+.playhead-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background-color: #ff4444;
+  pointer-events: none;
+}
+
+.playhead-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background-color: #ff4444;
+  border: 2px solid white;
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+}
+
+.timeline-playhead:hover .playhead-handle {
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+.playhead-tooltip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.timeline-playhead:hover .playhead-tooltip {
+  opacity: 1;
+}
+
+/* Play/Pause button styles */
+.play-pause-button {
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background-color: #646cff;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.play-pause-button:hover:not(:disabled) {
+  background-color: #535bf2;
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.play-pause-button:active:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.play-pause-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.play-pause-button svg {
+  width: 24px;
+  height: 24px;
 }
 
 /* Info panel styles */
