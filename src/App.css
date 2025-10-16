@@ -117,7 +117,7 @@ h1 {
   width: 100%;
   max-width: 900px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 1rem;
   align-items: center;
 }
@@ -125,7 +125,7 @@ h1 {
 /* Timeline styles */
 .timeline {
   position: relative;
-  width: 100%;
+  flex: 1;
   height: 50px;
   cursor: pointer;
   user-select: none;
@@ -260,8 +260,8 @@ h1 {
 
 /* Play/Pause button styles */
 .play-pause-button {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
   border: none;
   border-radius: 50%;
   background-color: #646cff;
@@ -272,6 +272,7 @@ h1 {
   justify-content: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .play-pause-button:hover:not(:disabled) {
@@ -290,14 +291,14 @@ h1 {
 }
 
 .play-pause-button svg {
-  width: 24px;
-  height: 24px;
+  width: 48px;
+  height: 48px;
 }
 
 /* Info panel styles */
 .info-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1.5rem;
   width: 100%;
   max-width: 900px;
@@ -336,7 +337,7 @@ h1 {
 .bisect-button {
   flex: 1;
   font-size: 1.5rem;
-  padding: 2rem;
+  padding: 1rem;
   border: none;
   border-radius: 12px;
   cursor: pointer;
