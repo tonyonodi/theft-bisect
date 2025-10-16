@@ -203,9 +203,17 @@ function App() {
       const newTime = getTimeFromMousePosition(e.clientX)
 
       if (dragType === 'playhead') {
-        // Constrain playhead to current range
-        const constrainedTime = Math.max(bisectState.startTime, Math.min(bisectState.endTime, newTime))
-        setBisectState(prev => prev ? { ...prev, currentTime: constrainedTime } : null)
+        // Expand range if playhead goes outside it
+        const constrainedTime = Math.max(0, Math.min(videoDuration, newTime))
+        const newStartTime = Math.min(bisectState.startTime, constrainedTime)
+        const newEndTime = Math.max(bisectState.endTime, constrainedTime)
+
+        setBisectState(prev => prev ? {
+          ...prev,
+          startTime: newStartTime,
+          endTime: newEndTime,
+          currentTime: constrainedTime
+        } : null)
         videoRef.current!.currentTime = constrainedTime
       } else if (dragType === 'startHandle') {
         // Constrain start handle to not go past end
@@ -247,9 +255,16 @@ function App() {
     if (isDragging || !bisectState || !videoRef.current) return
 
     const newTime = getTimeFromMousePosition(e.clientX)
-    const constrainedTime = Math.max(bisectState.startTime, Math.min(bisectState.endTime, newTime))
+    const constrainedTime = Math.max(0, Math.min(videoDuration, newTime))
+    const newStartTime = Math.min(bisectState.startTime, constrainedTime)
+    const newEndTime = Math.max(bisectState.endTime, constrainedTime)
 
-    setBisectState(prev => prev ? { ...prev, currentTime: constrainedTime } : null)
+    setBisectState(prev => prev ? {
+      ...prev,
+      startTime: newStartTime,
+      endTime: newEndTime,
+      currentTime: constrainedTime
+    } : null)
     videoRef.current.currentTime = constrainedTime
   }
 
