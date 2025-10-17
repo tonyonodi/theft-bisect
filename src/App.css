@@ -42,6 +42,10 @@ h1 {
   align-items: center;
   gap: 1rem;
 }
+.drop-zone-content svg {
+  width: 80px;
+  color: #999;
+}
 
 .upload-icon {
   width: 80px;
